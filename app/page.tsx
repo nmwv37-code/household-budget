@@ -124,17 +124,18 @@ export default function Home() {
 
       {/* ── Tab bar (floating over hero) ── */}
       <div className="mx-auto max-w-2xl px-4 -mt-12 relative z-10 mb-4">
-        <div className="glass-white rounded-2xl shadow-xl flex overflow-hidden">
+        <div className="rounded-2xl shadow-xl flex overflow-hidden p-1.5 gap-1.5"
+          style={{ background: 'linear-gradient(135deg, #312e81, #4c1d95)' }}>
           {(['dashboard', 'transactions'] as const).map((t) => (
             <button
               key={t}
               onClick={() => setTab(t)}
-              className={`flex-1 py-3.5 text-sm font-semibold transition-all ${
+              className={`flex-1 py-3 text-sm font-bold rounded-xl transition-all ${
                 tab === t
-                  ? 'text-indigo-700'
-                  : 'text-gray-400 hover:text-gray-600'
+                  ? 'text-indigo-700 shadow-lg'
+                  : 'text-indigo-200 hover:text-white hover:bg-white/10'
               }`}
-              style={tab === t ? { background: 'linear-gradient(135deg, #eef2ff, #fdf4ff)' } : {}}
+              style={tab === t ? { background: '#fff' } : {}}
             >
               {t === 'dashboard' ? '📊 대시보드' : '📋 거래 내역'}
             </button>
