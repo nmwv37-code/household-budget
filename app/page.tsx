@@ -8,6 +8,7 @@ import { sampleTransactions } from './seed';
 import Dashboard from './components/Dashboard';
 import TransactionList from './components/TransactionList';
 import TransactionForm from './components/TransactionForm';
+import Stars from './components/Stars';
 
 const STORAGE_KEY = 'household-budget-transactions';
 
@@ -81,10 +82,11 @@ export default function Home() {
   const monthLabel = format(new Date(selectedMonth + '-01'), 'yyyy년 M월', { locale: ko });
 
   return (
-    <div className="min-h-screen" style={{ background: 'linear-gradient(135deg, #f0f2ff 0%, #fce4ec 50%, #e8f5e9 100%)' }}>
+    <div className="min-h-screen relative" style={{ background: 'linear-gradient(160deg, #0f0c29 0%, #1a1040 40%, #24243e 100%)' }}>
+      <Stars />
 
       {/* ── Hero Header ── */}
-      <header className="relative overflow-hidden bg-mesh pt-8 pb-20 px-4">
+      <header className="relative z-10 overflow-hidden bg-mesh pt-8 pb-20 px-4">
         {/* Decorative blobs */}
         <div className="pointer-events-none absolute -top-16 -right-16 w-64 h-64 rounded-full opacity-30"
           style={{ background: 'radial-gradient(circle, #a78bfa, #7c3aed)' }} />
@@ -123,7 +125,7 @@ export default function Home() {
       </header>
 
       {/* ── Tab bar (floating over hero) ── */}
-      <div className="mx-auto max-w-2xl px-4 -mt-12 relative z-10 mb-4">
+      <div className="mx-auto max-w-2xl px-4 -mt-12 relative z-20 mb-4">
         <div className="rounded-2xl shadow-xl flex overflow-hidden p-1.5 gap-1.5"
           style={{ background: 'linear-gradient(135deg, #312e81, #4c1d95)' }}>
           {(['dashboard', 'transactions'] as const).map((t) => (
@@ -144,7 +146,7 @@ export default function Home() {
       </div>
 
       {/* ── Main ── */}
-      <main className="mx-auto max-w-2xl px-4 pb-24">
+      <main className="relative z-10 mx-auto max-w-2xl px-4 pb-24">
         {tab === 'dashboard'
           ? <Dashboard transactions={transactions} selectedMonth={selectedMonth} />
           : <TransactionList transactions={transactions} selectedMonth={selectedMonth} onEdit={handleEdit} onDelete={handleDelete} />
