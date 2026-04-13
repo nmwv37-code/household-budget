@@ -8,7 +8,6 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  Legend,
   ResponsiveContainer,
   PieChart,
   Pie,
@@ -20,7 +19,7 @@ import { ko } from 'date-fns/locale';
 
 interface Props {
   transactions: Transaction[];
-  selectedMonth: string; // YYYY-MM
+  selectedMonth: string;
 }
 
 const PIE_COLORS = [
@@ -38,7 +37,6 @@ export default function Dashboard({ transactions, selectedMonth }: Props) {
       const date = subMonths(new Date(selectedMonth + '-01'), 5 - i);
       return format(date, 'yyyy-MM');
     });
-
     return months.map((month) => {
       const start = startOfMonth(new Date(month + '-01'));
       const end = endOfMonth(new Date(month + '-01'));
@@ -47,20 +45,14 @@ export default function Dashboard({ transactions, selectedMonth }: Props) {
       );
       const income = filtered.filter((t) => t.type === 'income').reduce((s, t) => s + t.amount, 0);
       const expense = filtered.filter((t) => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
-      return {
-        month: format(new Date(month + '-01'), 'M월', { locale: ko }),
-        수입: income,
-        지출: expense,
-      };
+      return { month: format(new Date(month + '-01'), 'M월', { locale: ko }), 수입: income, 지출: expense };
     });
   }, [transactions, selectedMonth]);
 
   const currentMonthTx = useMemo(() => {
     const start = startOfMonth(new Date(selectedMonth + '-01'));
     const end = endOfMonth(new Date(selectedMonth + '-01'));
-    return transactions.filter((t) =>
-      isWithinInterval(new Date(t.date), { start, end })
-    );
+    return transactions.filter((t) => isWithinInterval(new Date(t.date), { start, end }));
   }, [transactions, selectedMonth]);
 
   const income = currentMonthTx.filter((t) => t.type === 'income').reduce((s, t) => s + t.amount, 0);
@@ -77,64 +69,74 @@ export default function Dashboard({ transactions, selectedMonth }: Props) {
       .sort((a, b) => b.value - a.value);
   }, [currentMonthTx]);
 
+  const totalExpense = expenseByCategory.reduce((s, c) => s + c.value, 0);
+
   const recentTx = useMemo(
     () => [...transactions].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 5),
     [transactions]
   );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <div className="rounded-2xl bg-white p-5 shadow-sm border border-gray-100">
-          <p className="text-sm text-gray-500 mb-1">이번 달 수입</p>
-          <p className="text-2xl font-bold text-blue-600">{formatAmount(income)}</p>
+      <div className="grid grid-cols-3 gap-3">
+        <div className="rounded-2xl bg-white p-4 shadow-sm border border-gray-100">
+          <p className="text-xs text-gray-500 mb-1">이번 달 수입</p>
+          <p className="text-lg font-bold text-blue-600 truncate">{formatAmount(income)}</p>
         </div>
-        <div className="rounded-2xl bg-white p-5 shadow-sm border border-gray-100">
-          <p className="text-sm text-gray-500 mb-1">이번 달 지출</p>
-          <p className="text-2xl font-bold text-red-500">{formatAmount(expense)}</p>
+        <div className="rounded-2xl bg-white p-4 shadow-sm border border-gray-100">
+          <p className="text-xs text-gray-500 mb-1">이번 달 지출</p>
+          <p className="text-lg font-bold text-red-500 truncate">{formatAmount(expense)}</p>
         </div>
-        <div className={`rounded-2xl p-5 shadow-sm border ${balance >= 0 ? 'bg-green-50 border-green-100' : 'bg-red-50 border-red-100'}`}>
-          <p className="text-sm text-gray-500 mb-1">잔액</p>
-          <p className={`text-2xl font-bold ${balance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+        <div className={`rounded-2xl p-4 shadow-sm border ${balance >= 0 ? 'bg-green-50 border-green-100' : 'bg-red-50 border-red-100'}`}>
+          <p className="text-xs text-gray-500 mb-1">잔액</p>
+          <p className={`text-lg font-bold truncate ${balance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
             {balance >= 0 ? '+' : ''}{formatAmount(balance)}
           </p>
         </div>
       </div>
 
-      {/* Charts */}
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        {/* Bar Chart */}
-        <div className="rounded-2xl bg-white p-5 shadow-sm border border-gray-100">
-          <h3 className="text-sm font-semibold text-gray-700 mb-4">최근 6개월 수입/지출</h3>
-          <ResponsiveContainer width="100%" height={220}>
-            <BarChart data={monthlyData} barCategoryGap="30%">
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-              <XAxis dataKey="month" tick={{ fontSize: 12 }} />
-              <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => (v / 10000).toFixed(0) + '만'} />
-              <Tooltip formatter={(v) => formatAmount(Number(v))} />
-              <Legend />
-              <Bar dataKey="수입" fill="#60a5fa" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="지출" fill="#f87171" radius={[4, 4, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
+      {/* Bar Chart */}
+      <div className="rounded-2xl bg-white p-5 shadow-sm border border-gray-100">
+        <h3 className="text-sm font-semibold text-gray-700 mb-4">최근 6개월 수입/지출</h3>
+        <ResponsiveContainer width="100%" height={200}>
+          <BarChart data={monthlyData} barCategoryGap="30%" margin={{ top: 0, right: 0, left: -10, bottom: 0 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+            <XAxis dataKey="month" tick={{ fontSize: 11 }} />
+            <YAxis tick={{ fontSize: 10 }} tickFormatter={(v) => (v / 10000).toFixed(0) + '만'} width={36} />
+            <Tooltip formatter={(v) => formatAmount(Number(v))} />
+            <Bar dataKey="수입" fill="#60a5fa" radius={[4, 4, 0, 0]} name="수입" />
+            <Bar dataKey="지출" fill="#f87171" radius={[4, 4, 0, 0]} name="지출" />
+          </BarChart>
+        </ResponsiveContainer>
+        {/* Bar Chart Legend */}
+        <div className="flex justify-center gap-5 mt-2">
+          <span className="flex items-center gap-1.5 text-xs text-gray-500">
+            <span className="inline-block w-3 h-3 rounded-sm bg-blue-400" />수입
+          </span>
+          <span className="flex items-center gap-1.5 text-xs text-gray-500">
+            <span className="inline-block w-3 h-3 rounded-sm bg-red-400" />지출
+          </span>
         </div>
+      </div>
 
-        {/* Pie Chart */}
-        <div className="rounded-2xl bg-white p-5 shadow-sm border border-gray-100">
-          <h3 className="text-sm font-semibold text-gray-700 mb-4">이번 달 카테고리별 지출</h3>
-          {expenseByCategory.length === 0 ? (
-            <div className="flex h-[220px] items-center justify-center text-gray-400 text-sm">
-              지출 내역이 없습니다
-            </div>
-          ) : (
-            <ResponsiveContainer width="100%" height={220}>
+      {/* Pie Chart */}
+      <div className="rounded-2xl bg-white p-5 shadow-sm border border-gray-100">
+        <h3 className="text-sm font-semibold text-gray-700 mb-4">이번 달 카테고리별 지출</h3>
+        {expenseByCategory.length === 0 ? (
+          <div className="flex h-40 items-center justify-center text-gray-400 text-sm">
+            지출 내역이 없습니다
+          </div>
+        ) : (
+          <>
+            <ResponsiveContainer width="100%" height={180}>
               <PieChart>
                 <Pie
                   data={expenseByCategory}
-                  cx="40%"
+                  cx="50%"
                   cy="50%"
                   outerRadius={80}
+                  innerRadius={40}
                   dataKey="value"
                   labelLine={false}
                 >
@@ -143,21 +145,27 @@ export default function Dashboard({ transactions, selectedMonth }: Props) {
                   ))}
                 </Pie>
                 <Tooltip formatter={(v) => formatAmount(Number(v))} />
-                <Legend
-                  layout="vertical"
-                  align="right"
-                  verticalAlign="middle"
-                  formatter={(value, entry) => {
-                    const total = expenseByCategory.reduce((s, c) => s + c.value, 0);
-                    const entryValue = (entry as { payload?: { value?: number } }).payload?.value ?? 0;
-                    const pct = total > 0 ? Math.round((entryValue / total) * 100) : 0;
-                    return `${value} ${pct}%`;
-                  }}
-                />
               </PieChart>
             </ResponsiveContainer>
-          )}
-        </div>
+
+            {/* Custom Legend — 차트 아래 격자 */}
+            <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 sm:grid-cols-3">
+              {expenseByCategory.map((item, i) => {
+                const pct = totalExpense > 0 ? Math.round((item.value / totalExpense) * 100) : 0;
+                return (
+                  <div key={item.name} className="flex items-center gap-2 min-w-0">
+                    <span
+                      className="shrink-0 w-2.5 h-2.5 rounded-full"
+                      style={{ backgroundColor: PIE_COLORS[i % PIE_COLORS.length] }}
+                    />
+                    <span className="text-xs text-gray-600 truncate">{item.name}</span>
+                    <span className="ml-auto text-xs font-medium text-gray-500 shrink-0">{pct}%</span>
+                  </div>
+                );
+              })}
+            </div>
+          </>
+        )}
       </div>
 
       {/* Recent Transactions */}
@@ -168,17 +176,17 @@ export default function Dashboard({ transactions, selectedMonth }: Props) {
         ) : (
           <ul className="divide-y divide-gray-50">
             {recentTx.map((tx) => (
-              <li key={tx.id} className="flex items-center justify-between py-3">
-                <div className="flex items-center gap-3">
-                  <span className={`text-lg ${tx.type === 'income' ? 'text-blue-400' : 'text-red-400'}`}>
+              <li key={tx.id} className="flex items-center justify-between py-3 gap-2">
+                <div className="flex items-center gap-3 min-w-0">
+                  <span className={`shrink-0 text-lg ${tx.type === 'income' ? 'text-blue-400' : 'text-red-400'}`}>
                     {tx.type === 'income' ? '↑' : '↓'}
                   </span>
-                  <div>
-                    <p className="text-sm font-medium text-gray-800">{tx.description || tx.category}</p>
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-gray-800 truncate">{tx.description || tx.category}</p>
                     <p className="text-xs text-gray-400">{tx.category} · {tx.date}</p>
                   </div>
                 </div>
-                <span className={`text-sm font-semibold ${tx.type === 'income' ? 'text-blue-600' : 'text-red-500'}`}>
+                <span className={`shrink-0 text-sm font-semibold ${tx.type === 'income' ? 'text-blue-600' : 'text-red-500'}`}>
                   {tx.type === 'income' ? '+' : '-'}{formatAmount(tx.amount)}
                 </span>
               </li>
