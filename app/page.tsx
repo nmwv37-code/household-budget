@@ -4,31 +4,18 @@ import { useState, useEffect, useCallback } from 'react';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import { Transaction } from './types';
-import { sampleTransactions } from './seed';
 import Dashboard from './components/Dashboard';
 import TransactionList from './components/TransactionList';
 import TransactionForm from './components/TransactionForm';
 import Stars from './components/Stars';
-
-const STORAGE_KEY = 'household-budget-transactions';
+import {
+  fetchTransactions,
+  insertTransaction,
+  updateTransaction,
+  deleteTransaction,
+} from '@/lib/supabase';
 
 type Tab = 'dashboard' | 'transactions';
-
-function loadTransactions(): Transaction[] {
-  if (typeof window === 'undefined') return [];
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw);
-    saveTransactions(sampleTransactions);
-    return sampleTransactions;
-  } catch {
-    return [];
-  }
-}
-
-function saveTransactions(txs: Transaction[]) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(txs));
-}
 
 export default function Home() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -36,22 +23,22 @@ export default function Home() {
   const [selectedMonth, setSelectedMonth] = useState(format(new Date(), 'yyyy-MM'));
   const [showForm, setShowForm] = useState(false);
   const [editingTx, setEditingTx] = useState<Transaction | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    setTransactions(loadTransactions());
+    fetchTransactions()
+      .then(setTransactions)
+      .finally(() => setLoading(false));
   }, []);
 
-  const handleSave = useCallback((data: Omit<Transaction, 'id' | 'createdAt'>) => {
-    setTransactions((prev) => {
-      let updated: Transaction[];
-      if (editingTx) {
-        updated = prev.map((t) => (t.id === editingTx.id ? { ...t, ...data } : t));
-      } else {
-        updated = [...prev, { ...data, id: crypto.randomUUID(), createdAt: new Date().toISOString() }];
-      }
-      saveTransactions(updated);
-      return updated;
-    });
+  const handleSave = useCallback(async (data: Omit<Transaction, 'id' | 'createdAt'>) => {
+    if (editingTx) {
+      const updated = await updateTransaction(editingTx.id, data);
+      setTransactions((prev) => prev.map((t) => (t.id === editingTx.id ? updated : t)));
+    } else {
+      const created = await insertTransaction(data);
+      setTransactions((prev) => [created, ...prev]);
+    }
     setShowForm(false);
     setEditingTx(null);
   }, [editingTx]);
@@ -61,12 +48,9 @@ export default function Home() {
     setShowForm(true);
   }, []);
 
-  const handleDelete = useCallback((id: string) => {
-    setTransactions((prev) => {
-      const updated = prev.filter((t) => t.id !== id);
-      saveTransactions(updated);
-      return updated;
-    });
+  const handleDelete = useCallback(async (id: string) => {
+    await deleteTransaction(id);
+    setTransactions((prev) => prev.filter((t) => t.id !== id));
   }, []);
 
   const handleCloseForm = useCallback(() => {
@@ -147,9 +131,11 @@ export default function Home() {
 
       {/* ── Main ── */}
       <main className="relative z-10 mx-auto max-w-2xl px-4 pb-24">
-        {tab === 'dashboard'
-          ? <Dashboard transactions={transactions} selectedMonth={selectedMonth} />
-          : <TransactionList transactions={transactions} selectedMonth={selectedMonth} onEdit={handleEdit} onDelete={handleDelete} />
+        {loading
+          ? <div className="flex justify-center py-20 text-white/50 text-sm">불러오는 중...</div>
+          : tab === 'dashboard'
+            ? <Dashboard transactions={transactions} selectedMonth={selectedMonth} />
+            : <TransactionList transactions={transactions} selectedMonth={selectedMonth} onEdit={handleEdit} onDelete={handleDelete} />
         }
       </main>
 
