@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import { Transaction } from './types';
+import { sampleTransactions } from './seed';
 import Dashboard from './components/Dashboard';
 import TransactionList from './components/TransactionList';
 import TransactionForm from './components/TransactionForm';
@@ -16,7 +17,10 @@ function loadTransactions(): Transaction[] {
   if (typeof window === 'undefined') return [];
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : [];
+    if (raw) return JSON.parse(raw);
+    // 처음 실행 시 샘플 데이터 로드
+    saveTransactions(sampleTransactions);
+    return sampleTransactions;
   } catch {
     return [];
   }
